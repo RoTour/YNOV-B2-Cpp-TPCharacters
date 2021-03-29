@@ -10,6 +10,7 @@ CONFIG -= app_bundle
 SOURCES += \
         character.cpp \
         characterfactory.cpp \
+        damage.cpp \
         main.cpp
 
 # Default rules for deployment.
@@ -19,4 +20,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     character.h \
-    characterfactory.h
+    characterfactory.h \
+    damage.h
