@@ -2,18 +2,21 @@
 #define CHARACTER_H
 
 #include "damage.h"
+#include "event.h"
 
+#include <QMap>
 #include <QString>
+#include <QVector>
 
 
 class Character {
-    protected:
+    private:
         int m_MaxHP;
         int m_HP;
         QString m_type;
         QString m_name;
     public:
-        virtual bool takeDamage(Damage dmg) = 0;
+        virtual bool takeDamage(Event* event) = 0;
 
         // Getters & Setters
         int HP() const;
@@ -35,24 +38,41 @@ public:
 class Warrior : public TCharacter<Warrior> {
 private:
 public:
-    bool takeDamage(Damage dmg);
-    static Character* create();
+    bool takeDamage(Event* event);
 };
 
 
 class Rogue : public TCharacter<Rogue> {
 private:
 public:
-    bool takeDamage(Damage dmg);
-    static Character* create();
+    bool takeDamage(Event* event);
 };
 
 
 class Wizard : public TCharacter<Wizard> {
 private:
 public:
-    bool takeDamage(Damage dmg);
-    static Character* create();
+    bool takeDamage(Event* event);
+};
+
+
+
+// FACTORY
+
+typedef Character* (*CreateCharacterFn)();
+
+class CharacterFactory
+{
+private:
+    QVector<Character*> characters;
+    QMap<QString, CreateCharacterFn> registeredFunctions;
+public:
+    CharacterFactory();
+    ~CharacterFactory();
+    void Register(QString type, CreateCharacterFn fn);
+    void AutoRegister();
+    void KillThemAll();
+    Character* Create(QString type, QString name);
 };
 
 #endif // CHARACTER_H

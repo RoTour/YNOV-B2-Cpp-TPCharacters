@@ -6,7 +6,9 @@ template<typename T>
 Character *TCharacter<T>::create()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    return new T;
+    T* newClass = new T;
+    newClass->setHP(15);
+    return newClass;
 }
 
 
@@ -40,38 +42,94 @@ void Character::setHP(int HP)
     m_HP = HP;
 }
 
-
-// Warrior
-bool Warrior::takeDamage(Damage dmg)
+bool Warrior::takeDamage(Event *event)
 {
-    int finalDamageAmount =
-            dmg.damageType() == DamageType::PHYSICAL ? dmg.baseAmount()/2 :
-            dmg.damageType() == DamageType::MAGICAL ? dmg.baseAmount() :
-            dmg.baseAmount()*2;
-
-    setHP(HP() - finalDamageAmount);
-    return HP() > 0;
+    if(HP() <= 0) return true;
+    int finalPDmg = event->physicalDamage() - 3 >= 0 ? event->physicalDamage() - 3 : 0;
+    int finalMDmg = event->magicalDamage() * 2;
+    int finalTDmg = event->trapDamage() + 1;
+    setHP(HP() - finalPDmg - finalMDmg - finalTDmg);
+    qDebug() << name() << ":" << HP() << "HP remaining " << "(-" << finalPDmg << "Ph.Dmg, -" << finalMDmg << "Ma.Dmg, -" << finalTDmg << "Tr.Dmg)";
+    return HP() <= 0;
 }
 
-Character *Warrior::create()
+bool Rogue::takeDamage(Event *event)
 {
-   qDebug() << __PRETTY_FUNCTION__;
-   return new Warrior;
+    if(HP() <= 0) return true;
+    int finalPDmg = event->physicalDamage() * 2;
+    int finalMDmg = event->magicalDamage() + 1;
+    int finalTDmg = event->trapDamage() - 3 >= 0 ? event->trapDamage() - 3 : 0;
+    setHP(HP() - finalPDmg - finalMDmg - finalTDmg);
+    qDebug() << name() << ":" << HP() << "HP remaining " << "(-" << finalPDmg << "Ph.Dmg, -" << finalMDmg << "Ma.Dmg, -" << finalTDmg << "Tr.Dmg)";
+    return HP() <= 0;
+}
+
+bool Wizard::takeDamage(Event *event)
+{
+    if(HP() <= 0) return true;
+    int finalPDmg = event->physicalDamage() + 1;
+    int finalMDmg = event->magicalDamage() - 3 >= 0 ? event->magicalDamage() - 3 : 0;
+    int finalTDmg = event->trapDamage() * 2;
+    setHP(HP() - finalPDmg - finalMDmg - finalTDmg);
+    qDebug() << name() << ":" << HP() << "HP remaining " << "(-" << finalPDmg << "Ph.Dmg, -" << finalMDmg << "Ma.Dmg, -" << finalTDmg << "Tr.Dmg)";
+    return HP() <= 0;
 }
 
 
-// Rogue
-Character *Rogue::create()
+
+
+
+
+// FACTORY
+
+CharacterFactory::CharacterFactory()
+{
+
+}
+
+CharacterFactory::~CharacterFactory()
+{
+    KillThemAll();
+}
+
+
+
+void CharacterFactory::Register(QString type, CreateCharacterFn fn)
+{
+    qDebug() << __PRETTY_FUNCTION__ << type;
+    registeredFunctions[type] = fn;
+}
+
+void CharacterFactory::AutoRegister()
+{
+    Register("warrior", &Warrior::create);
+    Register("rogue", &Rogue::create);
+    Register("wizard", &Wizard::create);
+}
+
+void CharacterFactory::KillThemAll()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    return new Rogue;
+    for (auto character : qAsConst(characters)) {
+        delete character;
+    }
 }
 
-
-// Wizard
-Character *Wizard::create()
+Character *CharacterFactory::Create(QString type, QString name)
 {
-    qDebug() << __PRETTY_FUNCTION__;
-    return new Wizard;
+    qDebug() << __PRETTY_FUNCTION__ << type << name;
+    Character *a;
+    CreateCharacterFn fn = registeredFunctions[type];
+    if (fn != nullptr) {
+        a = fn();
+        a->setType(type);
+        a->setName(name);
+        characters.push_back(a);
+        return a;
+    }
+    qDebug() << "unsupported type" << type;
+    return nullptr;
 }
+
+
 
